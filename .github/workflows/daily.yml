@@ -1,0 +1,58 @@
+name: Nhac bai
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: "So doan nhac moi ngay"
+        default: "3"
+      max_repeat:
+        description: "So doan cu (da nhac) toi da moi ngay"
+        default: "1"
+      force:
+        description: "Gui lai noi dung hom nay du da gui"
+        type: boolean
+        default: false
+permissions:
+  contents: write
+concurrency:
+  group: nhac-bai
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      COUNT: ${{ inputs.count }}
+      MAX_REPEAT: ${{ inputs.max_repeat }}
+      FORCE: ${{ inputs.force }}
+      ZALO_BOT_TOKEN: ${{ secrets.ZALO_BOT_TOKEN }}
+      ZALO_CHAT_ID: ${{ secrets.ZALO_CHAT_ID }}
+      GDRIVE_SA_KEY: ${{ secrets.GDRIVE_SA_KEY }}
+      GDRIVE_UNPROCESSED_ID: ${{ secrets.GDRIVE_UNPROCESSED_ID }}
+      GDRIVE_PROCESSED_ID: ${{ secrets.GDRIVE_PROCESSED_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pymupdf google-api-python-client google-auth requests
+      - run: python scripts/extract.py
+      - name: Luu JSON vao repo
+        run: |
+          mkdir -p highlights state
+          git config user.name "bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add highlights
+          git diff --staged --quiet || (git commit -m "Cap nhat highlights" && git pull --rebase && git push)
+      - run: python scripts/send.py
+      - name: Luu lich su da gui
+        run: |
+          mkdir -p state
+          git add state
+          git diff --staged --quiet || (git commit -m "Cap nhat lich su" && git pull --rebase && git push)
+      - name: Bao loi ve Zalo
+        if: failure()
+        run: |
+          curl -s -X POST "https://bot-api.zaloplatforms.com/bot${ZALO_BOT_TOKEN}/sendMessage" \
+            -H "Content-Type: application/json" \
+            -d "{\"chat_id\":\"${ZALO_CHAT_ID}\",\"text\":\"❌ Workflow nhắc bài bị lỗi, xem tab Actions trên GitHub\"}"
