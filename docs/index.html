@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="referrer" content="no-referrer">
+<title>Nhắc bài · Cài đặt</title>
+<style>
+:root{
+  --bg:#f4f1ec; --card:#ffffff; --ink:#1d1b18; --muted:#6f6a62; --line:#e6e1d8;
+  --accent:#0f6b5c; --accent-ink:#ffffff; --accent-soft:#d9efe9; --danger:#b3261e;
+  --r:24px;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#121413;--card:#1c1f1e;--ink:#eceae5;--muted:#a09b92;--line:#2c302e;
+        --accent:#5fd1bb;--accent-ink:#06231d;--accent-soft:#1d3a34;--danger:#f2b8b5}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  padding:calc(20px + env(safe-area-inset-top,0px)) 16px calc(120px + env(safe-area-inset-bottom,0px))}
+main{max-width:560px;margin:0 auto;display:grid;gap:16px}
+h1{font-size:28px;margin:8px 4px 0;letter-spacing:-.02em}
+.sub{margin:0 4px 4px;color:var(--muted);font-size:14px}
+.card{background:var(--card);border-radius:var(--r);padding:20px;border:1px solid var(--line)}
+.card h2{font-size:13px;margin:0 0 14px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.row+.row{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+.lbl b{display:block;font-weight:600}
+.lbl small{color:var(--muted);font-size:13px}
+.stepper{display:flex;align-items:center;gap:6px;background:var(--bg);border-radius:999px;padding:4px}
+.stepper button{width:44px;height:44px;border:0;border-radius:50%;background:var(--card);color:var(--ink);
+  font-size:22px;cursor:pointer;border:1px solid var(--line)}
+.stepper button:active{background:var(--accent-soft)}
+.stepper output{min-width:34px;text-align:center;font-weight:700;font-size:20px}
+input[type=time]{font:inherit;font-weight:700;font-size:20px;color:var(--ink);background:var(--bg);
+  border:1px solid var(--line);border-radius:16px;padding:10px 14px;min-height:48px}
+.doc{display:grid;gap:10px}
+.doc+.doc{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+.doc .name{font-weight:600;word-break:break-word}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--bg);border-radius:16px;padding:4px}
+.seg button{min-height:44px;border:0;border-radius:12px;background:transparent;color:var(--muted);
+  font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink)}
+.hint{font-size:13px;color:var(--muted);margin:14px 0 0}
+input[type=password],input[type=text]{width:100%;font:inherit;color:var(--ink);background:var(--bg);
+  border:1px solid var(--line);border-radius:16px;padding:14px;min-height:48px;margin-top:10px}
+.btn{min-height:52px;border:0;border-radius:999px;background:var(--accent);color:var(--accent-ink);
+  font:inherit;font-weight:700;font-size:16px;padding:0 28px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
+.btn:disabled{opacity:.5}
+.bar{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));
+  background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(14px);
+  border-top:1px solid var(--line)}
+.bar .in{max-width:560px;margin:0 auto;display:flex;gap:12px;align-items:center}
+.bar .btn{flex:1}
+#msg{font-size:14px;min-height:20px;margin:0 4px;color:var(--muted)}
+#msg.err{color:var(--danger)}
+.hidden{display:none!important}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+  <div>
+    <h1>📌 Nhắc bài</h1>
+    <p class="sub" id="repoLine"></p>
+  </div>
+  <p id="msg" role="status"></p>
+
+  <!-- Buoc 1: nhap token (chi 1 lan, luu tren may nay) -->
+  <section class="card hidden" id="gate">
+    <h2>Kết nối GitHub</h2>
+    <p style="margin:0">Dán token GitHub (fine-grained) có quyền <b>Contents: Read and write</b> cho repo này. Token chỉ lưu trong trình duyệt của bạn.</p>
+    <input type="password" id="tok" placeholder="github_pat_..." autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div style="margin-top:14px"><button class="btn" id="saveTok">Kết nối</button></div>
+  </section>
+
+  <!-- Buoc 2: cai dat -->
+  <div id="app" class="hidden" style="display:grid;gap:16px">
+    <section class="card">
+      <h2>Mỗi ngày</h2>
+      <div class="row">
+        <div class="lbl"><b>Số đoạn nhắc</b><small>Đoạn mới mỗi ngày</small></div>
+        <div class="stepper" data-key="count" data-min="1" data-max="20">
+          <button type="button" data-d="-1" aria-label="Giảm">−</button><output>3</output>
+          <button type="button" data-d="1" aria-label="Tăng">+</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="lbl"><b>Đoạn cũ tối đa</b><small>Đoạn đã nhắc, lấy lại</small></div>
+        <div class="stepper" data-key="max_repeat" data-min="0" data-max="10">
+          <button type="button" data-d="-1" aria-label="Giảm">−</button><output>1</output>
+          <button type="button" data-d="1" aria-label="Tăng">+</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Thời gian nhắc</h2>
+      <div class="row">
+        <div class="lbl"><b>Giờ gửi</b><small>Giờ Việt Nam</small></div>
+        <input type="time" id="time" value="07:00">
+      </div>
+      <p class="hint">Hệ thống kiểm tra mỗi 15 phút nên có thể trễ tối đa khoảng 15 phút.</p>
+    </section>
+
+    <section class="card">
+      <h2>Tài liệu nhắc</h2>
+      <div id="docs"></div>
+      <p class="hint">“Tự động” = trộn tất cả tài liệu. Chọn “Hôm nay” hoặc “Ngày mai” để ngày đó chỉ nhắc từ tài liệu này (chọn nhiều tài liệu thì trộn các tài liệu đã chọn).</p>
+    </section>
+
+    <section class="card">
+      <button class="btn ghost" id="logout">Đổi / xoá token</button>
+    </section>
+  </div>
+</main>
+
+<div class="bar hidden" id="bar"><div class="in"><button class="btn" id="save">Lưu cài đặt</button></div></div>
+
+<script>
+// ---- Repo: tu suy ra tu dia chi trang (owner.github.io/repo), co gia tri du phong ----
+const onPages = location.hostname.endsWith(".github.io");
+const OWNER = onPages ? location.hostname.split(".")[0] : "TTheAn";
+const REPO  = onPages ? (location.pathname.split("/")[1] || "Nhac-bai") : "Nhac-bai";
+const CFG_PATH = "config/config.json";
+const TZ = "Asia/Ho_Chi_Minh";
+const LS = "nhacbai_token";
+
+const $ = s => document.querySelector(s);
+const msg = (t, err) => { const m = $("#msg"); m.textContent = t || ""; m.className = err ? "err" : ""; };
+$("#repoLine").textContent = `${OWNER}/${REPO}`;
+
+// ---- Ngay theo gio Viet Nam ----
+const today = new Date().toLocaleDateString("sv-SE", { timeZone: TZ });
+const tomorrow = new Date(Date.parse(today + "T00:00:00Z") + 864e5).toISOString().slice(0, 10);
+
+// ---- Base64 an toan cho Unicode ----
+const enc = s => { let b = ""; new TextEncoder().encode(s).forEach(c => b += String.fromCharCode(c)); return btoa(b); };
+const dec = b => new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\s/g, "")), c => c.charCodeAt(0)));
+
+let token = localStorage.getItem(LS) || "";
+let sha = null;
+let cfg = { count: 3, max_repeat: 1, time: "07:00", focus: [] };
+let pins = {}; // ten tai lieu -> "today" | "tomorrow" | ""
+
+async function gh(path, opts = {}) {
+  const r = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`, {
+    ...opts,
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json",
+               "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json" },
+  });
+  return r;
+}
+
+function renderSteppers() {
+  document.querySelectorAll(".stepper").forEach(st => {
+    st.querySelector("output").textContent = cfg[st.dataset.key];
+  });
+}
+document.querySelectorAll(".stepper").forEach(st => {
+  st.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const k = st.dataset.key, min = +st.dataset.min, max = +st.dataset.max;
+    cfg[k] = Math.min(max, Math.max(min, (+cfg[k] || 0) + (+b.dataset.d)));
+    renderSteppers();
+  });
+});
+
+function renderDocs(names) {
+  const box = $("#docs");
+  box.innerHTML = "";
+  if (!names.length) { box.textContent = "Chưa có tài liệu nào (thả PDF vào folder Chưa xử lý trước)."; return; }
+  names.forEach(n => {
+    const d = document.createElement("div"); d.className = "doc";
+    const t = document.createElement("div"); t.className = "name"; t.textContent = n;
+    const seg = document.createElement("div"); seg.className = "seg";
+    [["", "Tự động"], ["today", "Hôm nay"], ["tomorrow", "Ngày mai"]].forEach(([v, label]) => {
+      const b = document.createElement("button"); b.type = "button"; b.textContent = label;
+      b.setAttribute("aria-pressed", String((pins[n] || "") === v));
+      b.onclick = () => { pins[n] = v; seg.querySelectorAll("button").forEach((x, i) =>
+        x.setAttribute("aria-pressed", String(["", "today", "tomorrow"][i] === v))); };
+      seg.append(b);
+    });
+    d.append(t, seg); box.append(d);
+  });
+}
+
+async function load() {
+  msg("Đang tải…");
+  try {
+    // cau hinh
+    let r = await gh(CFG_PATH);
+    if (r.status === 401 || r.status === 403) throw new Error("Token không hợp lệ hoặc thiếu quyền.");
+    if (r.status === 200) {
+      const j = await r.json(); sha = j.sha;
+      Object.assign(cfg, JSON.parse(dec(j.content)));
+    } else if (r.status !== 404) throw new Error("Không đọc được cấu hình (" + r.status + ").");
+    // danh sach tai lieu
+    r = await gh("highlights");
+    let names = [];
+    if (r.status === 200) names = (await r.json()).filter(f => f.name.endsWith(".json")).map(f => f.name.slice(0, -5));
+    // ghim con hieu luc
+    pins = {};
+    (cfg.focus || []).forEach(f => {
+      if (f.date === today) pins[f.doc] = "today";
+      else if (f.date === tomorrow) pins[f.doc] = "tomorrow";
+    });
+    $("#time").value = /^\d{2}:\d{2}$/.test(cfg.time) ? cfg.time : "07:00";
+    renderSteppers(); renderDocs(names);
+    $("#gate").classList.add("hidden");
+    $("#app").classList.remove("hidden"); $("#bar").classList.remove("hidden");
+    msg("");
+  } catch (e) {
+    msg(e.message || "Lỗi tải dữ liệu", true);
+    if (/Token/.test(e.message)) showGate();
+  }
+}
+
+function showGate() {
+  $("#app").classList.add("hidden"); $("#bar").classList.add("hidden");
+  $("#gate").classList.remove("hidden");
+}
+
+$("#save").onclick = async () => {
+  const btn = $("#save"); btn.disabled = true; msg("Đang lưu…");
+  const focus = [];
+  Object.entries(pins).forEach(([doc, v]) => {
+    if (v === "today") focus.push({ doc, date: today });
+    if (v === "tomorrow") focus.push({ doc, date: tomorrow });
+  });
+  const out = { count: +cfg.count, max_repeat: +cfg.max_repeat, time: $("#time").value || "07:00", focus };
+  try {
+    const body = { message: "Cap nhat cai dat nhac bai", content: enc(JSON.stringify(out, null, 2) + "\n") };
+    if (sha) body.sha = sha;
+    const r = await gh(CFG_PATH, { method: "PUT", body: JSON.stringify(body) });
+    if (r.status === 409 || r.status === 422) throw new Error("Cài đặt vừa bị thay đổi nơi khác. Tải lại trang rồi lưu lại.");
+    if (!r.ok) throw new Error("Lưu thất bại (" + r.status + "). Kiểm tra quyền Contents: write của token.");
+    sha = (await r.json()).content.sha; cfg = out;
+    msg("✅ Đã lưu. Áp dụng từ lần nhắc kế tiếp.");
+  } catch (e) { msg(e.message, true); }
+  btn.disabled = false;
+};
+
+$("#saveTok").onclick = () => {
+  const v = $("#tok").value.trim();
+  if (!v) return msg("Hãy dán token.", true);
+  token = v; localStorage.setItem(LS, v); $("#tok").value = ""; load();
+};
+$("#logout").onclick = () => { localStorage.removeItem(LS); token = ""; msg(""); showGate(); };
+
+token ? load() : showGate();
+</script>
+</body>
+</html>
