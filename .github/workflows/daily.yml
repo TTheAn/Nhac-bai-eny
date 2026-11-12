@@ -3,11 +3,11 @@ on:
   workflow_dispatch:
     inputs:
       count:
-        description: "So doan nhac moi ngay"
-        default: "3"
+        description: "So doan nhac moi ngay (de trong = lay tu trang cai dat)"
+        default: ""
       max_repeat:
-        description: "So doan cu (da nhac) toi da moi ngay"
-        default: "1"
+        description: "So doan cu toi da moi ngay (de trong = lay tu trang cai dat)"
+        default: ""
       force:
         description: "Gui lai noi dung hom nay du da gui"
         type: boolean
@@ -27,6 +27,7 @@ jobs:
       FORCE: ${{ inputs.force }}
       ZALO_BOT_TOKEN: ${{ secrets.ZALO_BOT_TOKEN }}
       ZALO_CHAT_ID: ${{ secrets.ZALO_CHAT_ID }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GDRIVE_SA_KEY: ${{ secrets.GDRIVE_SA_KEY }}
       GDRIVE_UNPROCESSED_ID: ${{ secrets.GDRIVE_UNPROCESSED_ID }}
       GDRIVE_PROCESSED_ID: ${{ secrets.GDRIVE_PROCESSED_ID }}
