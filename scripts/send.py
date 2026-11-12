@@ -87,6 +87,17 @@ if not chosen:
 
 # 5. Dich song ngu (Gemini) - loi dich khong lam hong viec nhac bai
 vi_map, tr_err = translate({i: by_id[i]["text"] for i in chosen})
+if tr_err or any(i not in vi_map for i in chosen):
+    # Gemini loi (bat ky nguyen nhan nao) = loi: KHONG gui, KHONG luu lich su.
+    # Apps Script thay chua co lich su hom nay nen se goi lai sau 15 phut.
+    tr_err = tr_err or "Thiếu bản dịch"
+    print("DICH LOI:", tr_err, flush=True)
+    if os.environ.get("GITHUB_OUTPUT"):
+        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write("translate_failed=true\n")
+    if TEST:  # gui thu khong duoc thu lai tu dong nen bao ngay ve Zalo
+        send(f"🧪 Gửi thử lỗi: Gemini không dịch được ({tr_err}).")
+    raise SystemExit(1)
 
 # 6. Gui (danh so #1 #2 de Zalo khong tu doi thanh 1. 1. 1.)
 blocks = []
@@ -99,8 +110,6 @@ for k, i in enumerate(chosen, 1):
         blocks.append(f"#{k} 🇬🇧 {it['text']}\n\n🇻🇳 {vi}\n{src}")
     else:
         blocks.append(f"#{k} {it['text']}\n{src}")
-if tr_err:
-    blocks.append(f"⚠️ Chưa dịch được một số đoạn ({tr_err})")
 
 header = "🧪 Gửi thử (không tính là đã nhắc)" if TEST else "📌 Nhắc bài hôm nay"
 if pool:
