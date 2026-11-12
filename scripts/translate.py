@@ -1,10 +1,8 @@
 """Dich song ngu Anh -> Viet (ngon ngu Y khoa) bang Gemini. Co cache de doan lap lai khong ton luot goi."""
 import json, os, time, requests
 
-KEY = os.environ.get("GEMINI_API_KEY", "")
-# Co the doi bang bien moi truong GEMINI_MODEL; neu model loi se thu model ke tiep
-MODELS = [m for m in (os.environ.get("GEMINI_MODEL"), "gemini-flash-latest",
-                      "gemini-3.5-flash", "gemini-2.5-flash") if m]
+KEY = "".join(os.environ.get("GEMINI_API_KEY", "").split())  # bo khoang trang / xuong dong dinh kem khi dan secret
+MODEL = "gemini-flash-lite-latest"  # co dinh, khong co model du phong
 CACHE = "state/translations.json"
 
 SYSTEM = (
@@ -57,7 +55,7 @@ def _call(model, texts):
         },
     }
     r = requests.post(url, headers={"x-goog-api-key": KEY, "Content-Type": "application/json"},
-                      json=payload, timeout=120)
+                      json=payload, timeout=90)
     r.raise_for_status()
     data = r.json()
     raw = data["candidates"][0]["content"]["parts"][0]["text"]
@@ -77,21 +75,24 @@ def translate(items):
 
     texts = [items[i] for i in todo]
     err = None
-    for model in MODELS:
-        for attempt in range(2):
-            try:
-                res = _call(model, texts)
-                for k, i in enumerate(todo):
-                    x = res.get(k)
-                    if x is None:
-                        continue
-                    vi = (x.get("vi") or "").strip() if x.get("english") else ""
-                    out[i] = cache[i] = vi
-                _save(cache)
-                missing = [i for i in todo if i not in out]
-                return out, (f"Thiếu bản dịch {len(missing)} đoạn" if missing else None)
-            except Exception as e:
-                err = f"{model}: {str(e)[:150]}"
-                print("Gemini loi:", err, flush=True)
-                time.sleep(3)
+    for attempt in range(3):
+        try:
+            res = _call(MODEL, texts)
+            for k, i in enumerate(todo):
+                x = res.get(k)
+                if x is None:
+                    continue
+                vi = (x.get("vi") or "").strip() if x.get("english") else ""
+                out[i] = cache[i] = vi
+            _save(cache)
+            missing = [i for i in todo if i not in out]
+            return out, (f"Thiếu bản dịch {len(missing)} đoạn" if missing else None)
+        except Exception as e:
+            msg = str(e).replace(KEY, "***") if KEY else str(e)
+            err = f"{MODEL}: {msg[:150]}"
+            print("Gemini loi:", err, flush=True)
+            code = getattr(getattr(e, "response", None), "status_code", None)
+            if code in (400, 401, 403, 404):  # loi key/model, thu lai vo ich
+                break
+            time.sleep(5 * (attempt + 1))      # 503 / 429 / timeout: doi roi thu lai cung model
     return out, err
