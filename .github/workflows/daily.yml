@@ -50,14 +50,15 @@ jobs:
           git config user.email "bot@users.noreply.github.com"
           git add highlights
           git diff --staged --quiet || (git commit -m "Cap nhat highlights" && git pull --rebase && git push)
-      - run: python scripts/send.py
+      - id: send
+        run: python scripts/send.py
       - name: Luu lich su da gui
         run: |
           mkdir -p state
           git add state
           git diff --staged --quiet || (git commit -m "Cap nhat lich su" && git pull --rebase && git push)
       - name: Bao loi ve Zalo
-        if: failure()
+        if: failure() && steps.send.outputs.translate_failed != 'true'
         run: |
           curl -s -X POST "https://bot-api.zaloplatforms.com/bot${ZALO_BOT_TOKEN}/sendMessage" \
             -H "Content-Type: application/json" \
