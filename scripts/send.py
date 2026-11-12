@@ -8,7 +8,7 @@ STATE = "state/history.json"
 CONFIG = "config/config.json"
 
 # --- Cau hinh: lay tu config/config.json (chinh bang trang GitHub Pages) ---
-cfg = {"count": 3, "max_repeat": 1, "time": "07:00", "focus": []}
+cfg = {"count": 3, "max_repeat": 1, "time": "07:00", "docs": [], "order": "random"}
 if os.path.exists(CONFIG):
     try:
         cfg.update(json.load(open(CONFIG, encoding="utf-8")))
@@ -19,28 +19,31 @@ if os.path.exists(CONFIG):
 COUNT = max(int(os.environ.get("COUNT") or cfg["count"] or 3), 1)
 MAX_REPEAT = max(int(os.environ.get("MAX_REPEAT") or cfg["max_repeat"] or 0), 0)
 FORCE = os.environ.get("FORCE") == "true"
+TEST = os.environ.get("TEST") == "true"   # gui thu: khong tinh la da nhac, khong ghi lich su
+SEQ = cfg.get("order") == "seq"             # nhac theo thu tu trong file
 
 now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
 today = now.date().isoformat()
 
 # 1. Doc tat ca doan highlight
 by_id = {}
-for p in sorted(glob.glob("highlights/*.json")):
+for fi, p in enumerate(sorted(glob.glob("highlights/*.json"))):
     stem = os.path.basename(p)[:-5]
-    for it in json.load(open(p, encoding="utf-8")):
+    for k, it in enumerate(json.load(open(p, encoding="utf-8"))):
         i = hashlib.sha1(it["text"].encode("utf-8")).hexdigest()[:12]
         if i not in by_id:
             it["id"] = i
             it["_file"] = stem
+            it["_ord"] = (fi, k)   # vi tri trong file de nhac theo thu tu
             by_id[i] = it
 
 if not by_id:
     send("Chưa có highlight nào để nhắc. Hãy thả PDF vào folder Chưa xử lý.")
     raise SystemExit(0)
 
-# 2. Tai lieu duoc ghim cho hom nay (chon tren trang cai dat)
-pins = [f.get("doc") for f in cfg.get("focus", []) if f.get("date") == today]
-pool = [i for i, it in by_id.items() if it["_file"] in pins] if pins else []
+# 2. Tai lieu duoc chon tren trang cai dat (rong = tat ca tai lieu)
+chosen_docs = cfg.get("docs") or []
+pool = [i for i, it in by_id.items() if it["_file"] in chosen_docs] if chosen_docs else []
 candidates = pool or list(by_id)
 
 # 3. Doc lich su
@@ -54,9 +57,13 @@ def pick():
     rnd = random.Random()
     new_ids = [i for i in candidates if i not in sent]
     old_ids = [i for i in candidates if i in sent]
-    rnd.shuffle(new_ids)
-    # doan cu: uu tien doan lau chua nhac nhat
-    old_ids.sort(key=lambda i: (sent[i]["last"], sent[i]["n"], rnd.random()))
+    if SEQ:  # theo thu tu trong file; doan cu: lau chua nhac nhat truoc, cung ngay thi theo thu tu
+        new_ids.sort(key=lambda i: by_id[i]["_ord"])
+        old_ids.sort(key=lambda i: (sent[i]["last"], sent[i]["n"], by_id[i]["_ord"]))
+    else:
+        rnd.shuffle(new_ids)
+        # doan cu: uu tien doan lau chua nhac nhat
+        old_ids.sort(key=lambda i: (sent[i]["last"], sent[i]["n"], rnd.random()))
     n = min(COUNT, len(candidates))
     n_old = min(MAX_REPEAT, len(old_ids), n)
     n_new = min(n - n_old, len(new_ids))
@@ -69,7 +76,7 @@ def pick():
 # 4. Chon doan hom nay
 reuse = False
 chosen = []
-if state["last_date"] == today:
+if state["last_date"] == today and not TEST:
     if not FORCE:
         print("Hom nay da gui roi, bo qua.")
         raise SystemExit(0)
@@ -95,13 +102,13 @@ for k, i in enumerate(chosen, 1):
 if tr_err:
     blocks.append(f"⚠️ Chưa dịch được một số đoạn ({tr_err})")
 
-header = "📌 Nhắc bài hôm nay"
+header = "🧪 Gửi thử (không tính là đã nhắc)" if TEST else "📌 Nhắc bài hôm nay"
 if pool:
     header += " · " + ", ".join(dict.fromkeys(by_id[i]["source"] for i in chosen))
 send_blocks(header, blocks)
 
-# 7. Luu lich su (chi sau khi gui thanh cong)
-if not reuse:
+# 7. Luu lich su (chi sau khi gui thanh cong; gui thu thi khong luu)
+if not reuse and not TEST:
     for i in chosen:
         rec = sent.get(i, {"n": 0})
         sent[i] = {"last": today, "n": rec["n"] + 1}
